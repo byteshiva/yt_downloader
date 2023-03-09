@@ -10,22 +10,31 @@ DOWNLOAD_FOLDER = './downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-class YoutubeDownloader:
+class Downloader:
     def __init__(self, url):
         self.url = url
 
-    def _get_video_title(self):
-        yt = YouTube(self.url)
-        self.video_title = yt.title
+    def download(self):
+        pass
 
-    def download_with_pytube(self):
+class VideoDownloader(Downloader):
+    def download(self):
         yt = YouTube(self.url)
         video = yt.streams.first()
         title = yt.title.replace(' ', '_').lower() + '.mp4'
         video.download(DOWNLOAD_FOLDER, filename=title)
         return title
 
-    def download_audio(self):
+class AudioDownloader(Downloader):
+    def __init__(self, url):
+        super().__init__(url)
+        self.video_title = None
+
+    def _get_video_title(self):
+        yt = YouTube(self.url)
+        self.video_title = yt.title
+
+    def download(self):
         self._get_video_title()
         yt = YouTube(self.url)
         stream = yt.streams.filter(only_audio=True).first()
@@ -39,8 +48,8 @@ def download_video():
     if not url:
         return jsonify({'message': 'Url parameter is missing'}), 400
 
-    downloader = YoutubeDownloader(url)
-    title = downloader.download_with_pytube()
+    downloader = VideoDownloader(url)
+    title = downloader.download()
     return jsonify({'title': title}), 200
 
 @app.route('/audio', methods=['POST'])
@@ -49,9 +58,10 @@ def download_audio():
     if not url:
         return jsonify({'message': 'Url parameter is missing'}), 400
 
-    downloader = YoutubeDownloader(url)
-    title = downloader.download_audio()
+    downloader = AudioDownloader(url)
+    title = downloader.download()
     return jsonify({'title': title}), 200
 
+
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=True)
